@@ -28,5 +28,5 @@
         android:id="@+id/glassesArt"
         android:layout_gravity="center_horizontal|bottom"
         android:src="@drawable/glasses"
-        android:onClick="mainIntent"/>
+        android:onClick="startCameraIntent"/>
 </FrameLayout>

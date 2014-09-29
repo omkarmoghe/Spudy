@@ -53,12 +53,10 @@ import java.util.Date;
 public class MainActivity extends Activity {
     Bitmap bm;
     String finalText = "";
+    String mCurrentPhotoPath;
 
     private String apiKey = "d7wSyPRbD8";
     private String langCode = "en";
-
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-    String mCurrentPhotoPath = "";
 
     public boolean playing = false;
     ImageView playpauseButton;
@@ -85,14 +83,16 @@ public class MainActivity extends Activity {
         getActionBar().hide();
         setContentView(R.layout.activity_main);
 
+        getPath();
+
         playpauseButton = (ImageView) findViewById(R.id.playpauseButton);
         wpmSlider = (SeekBar) findViewById(R.id.wpmSlider);
         wpmDisplay = (TextView) findViewById(R.id.wpmDisplay);
         mainDisplay = (TextView) findViewById(R.id.mainDisplay);
 
-        startCameraIntent();
-
         handler = new Handler();
+
+        sendPost();
     }
 
     private Runnable timerTask = new Runnable() {
@@ -148,7 +148,8 @@ public class MainActivity extends Activity {
             makeAlert();
         } else {
             initializeList();
-            pushString(finalText);
+            //TODO prompt user to name the string file and give it tags?
+            pushString(finalText, "temp");
             Toast.makeText(this, "Done!", Toast.LENGTH_SHORT).show();
         }
     }
@@ -177,48 +178,6 @@ public class MainActivity extends Activity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 
         StrictMode.setThreadPolicy(policy);
-    }
-
-    public void startCameraIntent(){
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        // Ensure that there's a camera activity to handle the intent
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (photoFile != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                        Uri.fromFile(photoFile));
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-            }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            sendPost();
-        }
-    }
-
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
-        return image;
     }
 
     public void getBitmap(){
@@ -299,14 +258,15 @@ public class MainActivity extends Activity {
         alertDialog.setMessage("There doesn't seem to be anything here. Please try again.");
         alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
-                startCameraIntent();
+                //TODO if the picture is not accepted needs to start the camera activity again;
+                //startCameraIntent();
             }
         });
         alertDialog.show();
     }
 
-    public void pushString(String stringToPush) {
-        myFirebaseRef.child("message").setValue(stringToPush);
+    public void pushString(String stringToPush, String name) {
+        myFirebaseRef.child(name).setValue(stringToPush);
     }
 
     //TODO get the snapshot object out and do some useful shit with it.
@@ -321,5 +281,14 @@ public class MainActivity extends Activity {
             public void onCancelled(FirebaseError error) {
             }
         });
+    }
+
+    public void getPath(){
+        Bundle extras = getIntent().getExtras();
+        if(extras != null) {
+            mCurrentPhotoPath = extras.getString("path");
+        } else {
+            //TODO what to do if photo was not taken correctly
+        }
     }
 }
